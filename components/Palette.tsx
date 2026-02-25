@@ -16,9 +16,13 @@ export function Palette({ onSelect, disabled }: PaletteProps) {
           key={id}
           type="button"
           className="palette__item"
-          onClick={() => onSelect(id)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!disabled) onSelect(id);
+          }}
           disabled={disabled}
-          aria-label={`Select ${id} helmet`}
+          aria-label={`Select ${id}`}
         >
           <HelmetIcon id={id} />
         </button>

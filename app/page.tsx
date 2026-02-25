@@ -90,7 +90,9 @@ export default function Home() {
     <main className="screen">
       <div className="container">
         <header className="header">
-          <h1 className="title">BIOMIND</h1>
+          <h1 className="title">
+            BIO<span className="title-mind">MIND</span>
+          </h1>
           <p className="subtitle">Guess the 4-color code in 6 tries</p>
         </header>
 
@@ -102,14 +104,8 @@ export default function Home() {
         </p>
 
         <section className="game">
-          <Board
-            secretCode={secretCode}
-            history={history}
-            revealCode={gameOver}
-            codeLabel={status === "lost" ? "The code was:" : undefined}
-          />
-
           <div className="current-row">
+            <p className="current-row__label">Your guess</p>
             <CurrentGuess
               guess={currentGuess}
               onSlotClick={removeFromGuess}
@@ -118,9 +114,15 @@ export default function Home() {
               canSubmit={!!canSubmit}
               showSubmit={true}
             />
+            <Palette onSelect={addToGuess} disabled={gameOver} />
           </div>
 
-          <Palette onSelect={addToGuess} disabled={gameOver} />
+          <Board
+            secretCode={secretCode}
+            history={history}
+            revealCode={gameOver}
+            codeLabel={status === "lost" ? "The code was:" : undefined}
+          />
         </section>
 
         {gameOver && (
