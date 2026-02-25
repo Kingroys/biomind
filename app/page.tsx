@@ -1,0 +1,137 @@
+"use client";
+
+import { useCallback, useState } from "react";
+import {
+  generateCode,
+  evaluateGuess,
+  isGuessComplete,
+  type Code,
+  type Guess,
+  type Feedback,
+  type HelmetId,
+  type HistoryEntry,
+} from "@/lib/gameLogic";
+import { Board } from "@/components/Board";
+import { Palette } from "@/components/Palette";
+import { CurrentGuess } from "@/components/CurrentGuess";
+
+type GameStatus = "playing" | "won" | "lost";
+
+const EMPTY_GUESS: Guess = [null, null, null, null];
+
+function useGameState() {
+  const [secretCode, setSecretCode] = useState<Code>(() => generateCode());
+  const [currentGuess, setCurrentGuess] = useState<Guess>([...EMPTY_GUESS]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [status, setStatus] = useState<GameStatus>("playing");
+
+  const addToGuess = useCallback((helmet: HelmetId) => {
+    setCurrentGuess((prev) => {
+      const next = [...prev];
+      const idx = next.findIndex((s) => s === null);
+      if (idx === -1) return prev;
+      next[idx] = helmet;
+      return next;
+    });
+  }, []);
+
+  const removeFromGuess = useCallback((index: number) => {
+    setCurrentGuess((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
+  }, []);
+
+  const submitGuess = useCallback(() => {
+    if (!isGuessComplete(currentGuess)) return;
+    const feedback = evaluateGuess(secretCode, currentGuess);
+    setHistory((h) => [...h, { guess: [...currentGuess], feedback }]);
+    setCurrentGuess([...EMPTY_GUESS]);
+    if (feedback.red === 4) {
+      setStatus("won");
+      return;
+    }
+    if (history.length + 1 >= 6) {
+      setStatus("lost");
+    }
+  }, [secretCode, currentGuess, history.length]);
+
+  const newGame = useCallback(() => {
+    setSecretCode(generateCode());
+    setCurrentGuess([...EMPTY_GUESS]);
+    setHistory([]);
+    setStatus("playing");
+  }, []);
+
+  return {
+    secretCode,
+    currentGuess,
+    history,
+    status,
+    addToGuess,
+    removeFromGuess,
+    submitGuess,
+    newGame,
+  };
+}
+
+export default function Home() {
+  const {
+    secretCode,
+    currentGuess,
+    history,
+    status,
+    addToGuess,
+    removeFromGuess,
+    submitGuess,
+    newGame,
+  } = useGameState();
+
+  const gameOver = status === "won" || status === "lost";
+  const canSubmit =
+    isGuessComplete(currentGuess) && history.length < 6 && !gameOver;
+
+  return (
+    <main className="game-screen">
+      <div className="title-block">
+        <span className="question-marks">???</span>
+        <h1 className="game-title">BIOMIND</h1>
+      </div>
+
+      <div className="console">
+        <div className="console__content">
+          <Palette onSelect={addToGuess} disabled={gameOver} />
+          <Board
+            secretCode={secretCode}
+            history={history}
+            revealCode={gameOver}
+          />
+          <Palette onSelect={addToGuess} disabled={gameOver} />
+        </div>
+        <CurrentGuess
+          guess={currentGuess}
+          onSlotClick={removeFromGuess}
+          onSubmit={submitGuess}
+          disabled={gameOver}
+          canSubmit={!!canSubmit}
+        />
+        {gameOver && (
+          <div className="game-over">
+            <p className="game-over__message">
+              {status === "won" ? "You cracked the code!" : "Out of tries!"}
+            </p>
+            <button
+              type="button"
+              className="game-over__new-game"
+              onClick={newGame}
+            >
+              New game
+            </button>
+          </div>
+        )}
+        <p className="tagline">CAN YOU CRACK THE CODE?</p>
+      </div>
+    </main>
+  );
+}

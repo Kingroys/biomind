@@ -1,0 +1,1398 @@
+# Engineering Portal - Cursor Rules
+
+You are a senior developer working on a Symfony/React project.
+Our project runs with dockers
+- **app**: docker with the backend and the frontend
+- **db**: docker containing the database
+
+## app container structure
+- The docker working directory is /var/www/html/
+- The backend app is in the subdirectory be/
+- The frontend app is in the subdirectory fe/
+- All commands needs to be run in the respective docker
+
+## Project Overview
+This is a full-stack engineering portal with:
+- **Backend**: Symfony 7.1+ PHP API with Doctrine ORM
+- **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
+- **Database**: MySQL with UUID primary keys
+- **Authentication**: JWT with Google OAuth integration
+
+## Development Workflow
+
+### Git Rules
+- **Commit messages** are written in english
+- **Use feature branches** for new features
+- **Write descriptive commit messages**
+- **Use conventional commits** format
+- **Do not commit before being asked to**
+- **Do not add files before being asked to**
+
+### Backend Quality Checks (MANDATORY before commit)
+- **PHPStan analysis**: `docker exec engineering-portal_app_1 bash -c "cd be && vendor/bin/phpstan analyse --memory-limit=1G"`
+- **PHP CS Fixer**: `docker exec engineering-portal_app_1 bash -c "cd be && vendor/bin/php-cs-fixer fix --dry-run"`
+- **Both tools must pass with 0 errors** before any backend commit
+- **If errors found**: Fix them first, then re-run the checks
+- **Never commit backend code with PHPStan or CS Fixer errors**
+- **See detailed rules in the Backend section below"
+
+### Docker Commands
+- **Backend commands** must run in container: `docker-compose exec -T app`
+- **Backend Symfony Console commands** must run in container: `docker-compose exec -T app be/bin/console`
+- **Frontend commands** must run in container: Run in `/fe` directory
+
+### Security
+- **JWT authentication** for API access
+- **Google OAuth** for user authentication. Every pages but login needs to be protected by proper authentication
+- **Input validation** using DTO validation
+- **SQL injection prevention** using Doctrine ORM
+- **CORS configuration** for API access
+
+Remember: Always follow the established patterns in the codebase and maintain consistency across the project. Any documentation, code, or comment must be written in English.
+
+---
+
+## Backend (Symfony) Rules
+- **Clean Architecture**: Controllers → Services → Repositories → Entities
+- **DTO Pattern**: All API requests/responses use DTOs extending `AbstractDto`
+- **Repository Pattern**: Custom repositories for data access
+- **Service Layer**: Business logic in services, not controllers
+
+### Naming Conventions
+- **Entities**: PascalCase (e.g., `User`, `BusinessUnit`, `GradeRequirement`)
+- **Controllers**: `{Entity}Controller` (e.g., `UserController`, `TeamController`)
+- **Services**: `{Entity}Service` (e.g., `UserService`, `TeamService`)
+- **Repositories**: `{Entity}Repository` (e.g., `UserRepository`, `TeamRepository`)
+- **DTOs**: `{Action}{Entity}RequestDto` / `{Entity}ResponseDto` (e.g., `CreateUserRequestDto`, `UserResponseDto`)
+- **Methods**: camelCase (e.g., `createUser`, `updateBusinessUnit`)
+
+### Code Structure
+```php
+// Controllers: Use ApiResponseTrait, OpenAPI attributes
+#[Route('/api/users')]
+#[OA\Tag(name: 'User')]
+class UserController extends AbstractController
+{
+    use ApiResponseTrait;
+    
+    public function __construct(
+        private UserService $userService,
+        private ValidatorInterface $validator
+    ) {}
+}
+
+// Services: Constructor injection, logging, DTO validation
+class UserService
+{
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private UserRepository $userRepository,
+        private ValidatorInterface $validator,
+        private LoggerInterface $logger
+    ) {}
+    
+    public function createUser(CreateUserRequestDto $dto): UserResponseDto
+    {
+        $dto->validateForCreateOrFail();
+        // ... business logic
+    }
+}
+
+// DTOs: Extend AbstractDto, use validation attributes
+class CreateUserRequestDto extends AbstractDto
+{
+    #[Assert\NotBlank(groups: ['create'])]
+    #[Assert\Length(max: 255, groups: ['create'])]
+    public string $firstName;
+    
+    public function __construct(ValidatorInterface $validator, string $firstName)
+    {
+        parent::__construct($validator);
+        $this->firstName = $firstName;
+    }
+}
+```
+
+### Key Rules
+1. **Always use DTOs** for API input/output, never expose entities directly
+2. **Use AbstractDto validation** - call `validateForCreateOrFail()` or `validateForUpdateOrFail()`
+3. **Constructor injection** for all dependencies
+4. **Log important operations** with context
+5. **Use OpenAPI attributes** for API documentation
+6. **Follow PSR-12** coding standards
+7. **Use UUIDs** for all entity IDs
+8. **Extend TimestampableEntity** for created/updated timestamps
+9. **API Curl Calls needs a JWT Token** except for login and logout
+10. You can generate a token with the Symfony Command `cd /var/www/engineering-portal && docker-compose exec -T app be/bin/console lexik:jwt:generate-token steve@chiliz.com`
+
+### API Response Format
+```php
+// Success responses
+return $this->successResponse($data);
+return $this->createdResponse($data, 'User created successfully');
+return $this->listResponse($items, $paginationMeta);
+
+// Error responses
+return $this->errorResponse('Error message', 400);
+return $this->validationErrorResponse($errors);
+return $this->notFoundResponse('User not found');
+```
+
+### Entity Patterns
+- **UUID primary keys** for all entities
+- **Extend TimestampableEntity** for audit fields
+- **Use proper relationships** (OneToMany, ManyToOne, ManyToMany)
+- **Soft delete** where appropriate
+- **Use enums** for fixed value sets
+
+### Migration Rules
+- **Always create migrations** for schema changes
+- **Use descriptive names** for migrations
+- **Test migrations** before deployment
+- **Use proper indexes** for performance
+
+## Code Quality Rules
+
+### PHP (Backend)
+- **Follow PSR-12** standards
+- **Use PHPStan** for static analysis (level 8)
+- **Use PHP CS Fixer** for code formatting
+- **Run code quality checks** in Docker container: `docker-compose exec engineering-portal_app_1 make app.check_style`
+- **Fix style issues**: `docker-compose exec engineering-portal_app_1 make app.fix_style`
+
+### MANDATORY Pre-Commit Checks
+- **PHPStan must pass with 0 errors**: `docker exec engineering-portal_app_1 bash -c "cd be && vendor/bin/phpstan analyse --memory-limit=1G"`
+- **PHP CS Fixer must pass with 0 errors**: `docker exec engineering-portal_app_1 bash -c "cd be && vendor/bin/php-cs-fixer fix --dry-run"`
+- **Both tools must show "No errors" or "Found 0 files that can be fixed"**
+- **NEVER commit backend code with quality check failures**
+- **Fix all issues before committing**
+
+### Testing
+- **Write tests** for every endpoint in be/scripts/test-api.sh
+- **Test both success and error scenarios**
+- **Use fixtures** for test data
+
+## File Organization
+
+### Backend Structure
+```
+src/
+├── Controller/          # API controllers
+├── Services/           # Business logic
+├── Repository/         # Data access
+├── Entity/            # Doctrine entities
+├── DTO/               # Data transfer objects
+├── Security/          # Authentication/authorization
+└── Serializer/        # Custom serializers
+```
+
+## Common Patterns
+
+### API Endpoints
+- **RESTful URLs**: `/api/{entity}` for collections, `/api/{entity}/{id}` for resources
+- **HTTP methods**: GET (list/read), POST (create), PUT (update), DELETE (delete)
+- **Consistent response format** using ApiResponseTrait
+- **Proper HTTP status codes**
+
+### Error Handling
+- Use ApiResponseTrait methods for consistent error responses
+---
+
+## Frontend (React 19/TypeScript) Rules
+
+### Architecture Patterns
+- **Component-based**: Reusable components in `/components` with shadcn/ui primitives
+- **Page-based routing**: Pages in `/pages` using React Router v7
+- **Custom hooks**: Data fetching with TanStack Query v5 and state management
+- **Service layer**: API calls in `/services/api` with TypeScript interfaces
+- **Global state**: Zustand stores in `/store` with persistence
+- **UI System**: shadcn/ui components with Radix UI primitives
+- **Styling**: Tailwind CSS v4 with custom utilities and responsive design
+
+### Technology Stack
+- **React**: 19.1.0 with functional components and hooks
+- **TypeScript**: 5.8.3 with strict mode
+- **Vite**: 6.3.5 for build tooling and dev server
+- **TanStack Query**: 5.85.6 for server state management
+- **TanStack Table**: 8.21.3 for data tables with pagination
+- **React Router**: 7.5.3 for client-side routing
+- **Zustand**: 5.0.4 for client state management
+- **Tailwind CSS**: 4.1.8 for styling
+- **shadcn/ui**: Component library with Radix UI primitives
+- **Axios**: 1.9.0 for HTTP requests
+- **Google OAuth**: @react-oauth/google for authentication
+
+### Naming Conventions
+- **Components**: PascalCase (e.g., `UserCard`, `DataTable`, `MainLayout`)
+- **Hooks**: `use{Entity}` or `use{Entity}Query` (e.g., `useUsers`, `useUsersQuery`)
+- **Pages**: `{Entity}Page` (e.g., `UsersAdminPage`, `TeamsAdminPage`)
+- **Services**: `{entity}Api` (e.g., `userApi`, `teamApi`)
+- **Files**: PascalCase for components, camelCase for utilities
+- **API Services**: `{entity}ApiService` class pattern
+
+### Component Structure
+```tsx
+// Functional components with TypeScript and shadcn/ui
+import { Button } from "@components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@components/ui/avatar";
+import { cn } from "@/lib/utils";
+
+interface UserCardProps {
+  user: User;
+  onEdit?: (user: User) => void;
+  onDelete?: (id: string) => void;
+}
+
+export default function UserCard({ user, onEdit, onDelete }: UserCardProps) {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border p-4">
+      <div className="flex items-center space-x-3">
+        <Avatar>
+          <AvatarImage src={user.picture} />
+          <AvatarFallback>
+            {user.firstName?.[0]}{user.lastName?.[0]}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <h3 className="font-medium">{user.firstName} {user.lastName}</h3>
+          <p className="text-sm text-gray-500">{user.email}</p>
+        </div>
+        <div className="flex space-x-2">
+          {onEdit && (
+            <Button variant="outline" size="sm" onClick={() => onEdit(user)}>
+              Edit
+            </Button>
+          )}
+          {onDelete && (
+            <Button variant="destructive" size="sm" onClick={() => onDelete(user.id)}>
+              Delete
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Key Rules
+1. **Use TypeScript interfaces** for all props and data structures
+2. **Prefer functional components** with hooks (React 19 patterns)
+3. **Use TanStack Query** for server state management with proper caching
+4. **Use custom hooks** for data fetching and state management
+5. **Use shadcn/ui components** with Radix UI primitives
+6. **Use Tailwind CSS v4** for styling with `cn()` utility
+7. **Implement proper error boundaries** and loading states
+8. **Use React Router v7** for navigation with protected routes
+9. **Use Zustand** for client state management with persistence
+10. **Follow ESLint and Prettier** configurations
+11. **Use TanStack Table** for data tables with pagination
+12. **Implement optimistic updates** for better UX
+
+### State Management
+```tsx
+// Zustand stores with persistence
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+interface AuthStore {
+  token: string | null;
+  user: User | null;
+  login: (token: string, user: User) => void;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      token: null,
+      user: null,
+      login: (token: string, user: User) => set({ token, user }),
+      logout: () => set({ token: null, user: null }),
+    }),
+    { name: "auth-storage" }
+  )
+);
+
+// TanStack Query hooks with proper caching
+export const useUsersQuery = (page: number, itemsPerPage: number, search?: string) => {
+  const { token } = useAuthStore();
+  
+  return useQuery({
+    queryKey: userKeys.list({ page, itemsPerPage, search, status: "all" }),
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      return await userApiService.getUsers(itemsPerPage, (page - 1) * itemsPerPage, search);
+    },
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+// Combined hook for easier usage
+export const useUsers = (page: number, itemsPerPage: number, search?: string) => {
+  const usersQuery = useUsersQuery(page, itemsPerPage, search);
+  const createUserMutation = useCreateUserMutation();
+  const updateUserMutation = useUpdateUserMutation();
+  const deleteUserMutation = useDeleteUserMutation();
+
+  return {
+    users: usersQuery.data?.data || [],
+    pagination: usersQuery.data?.meta?.pagination,
+    isLoading: usersQuery.isLoading,
+    error: usersQuery.error,
+    createUser: createUserMutation.mutateAsync,
+    updateUser: updateUserMutation.mutateAsync,
+    deleteUser: deleteUserMutation.mutateAsync,
+    refetch: usersQuery.refetch,
+  };
+};
+```
+
+### Styling
+- **Use Tailwind CSS** classes
+- **Use `cn()` utility** for conditional classes
+- **Follow design system** patterns
+- **Use CSS variables** for theming
+- **Mobile-first** responsive design
+
+## Code Quality Rules
+
+### TypeScript/React (Frontend)
+- **Run linting**: `npm run lint` (ESLint + TypeScript + Prettier check)
+- **Fix formatting**: `npm run prettier` (Prettier format)
+- **Development server**: `npm run dev` (Vite dev server on port 8888)
+- **Build production**: `npm run build` (TypeScript compilation + Vite build)
+- **Use ESLint** for code quality with React and TypeScript rules
+- **Use Prettier** for code formatting with custom configuration
+- **Follow TypeScript strict mode** with strict type checking
+- **Path aliases** configured in Vite for clean imports (`@/`, `@components/`, etc.)
+
+### Vite Configuration
+- **Port**: 8888 (configurable in vite.config.ts)
+- **Host**: true (accessible from network)
+- **Path aliases**: Configured for clean imports
+- **Plugins**: React plugin + Tailwind CSS plugin
+- **Build**: TypeScript compilation + Vite bundling
+
+## File Organization
+
+### Frontend Structure
+```
+src/
+├── components/                    # Reusable components
+│   ├── admin/                    # Admin-specific components
+│   │   ├── modals/              # Modal dialogs (UserCreateEditModal, TeamCreateEditModal)
+│   │   └── table-columns/       # Table column definitions (UserColumns, TeamColumns)
+│   ├── global/                   # Global components
+│   ├── navbar/                   # Navigation components
+│   ├── page/                     # Page-level components
+│   ├── ui/                       # shadcn/ui primitives
+├── pages/                        # Page components
+│   ├── admin/                    # Admin pages
+├── hooks/                        # Custom hooks
+├── services/                     # API services
+│   └── api/                     # API service classes
+├── store/                        # Zustand stores
+├── lib/                          # Utilities
+```
+
+### Key Features and Patterns
+
+#### Admin Management System
+- **Comprehensive Admin Pages**: Users, Teams, Chapters, Business Units, Sprints, Tickets, Grades, Performance Assessments, Goals
+- **Data Tables**: Reusable `DataTable` component with TanStack Table for pagination, sorting, filtering, and search
+- **Modal Dialogs**: Create/Edit modals for all entities with form validation
+- **Breadcrumb Navigation**: Page-level navigation with `PageBreadcrumbs` component
+- **Page Headers**: Consistent page titles and descriptions with `PageHeading` component
+
+#### Data Management Patterns
+- **Optimistic Updates**: Immediate UI updates with rollback on error
+- **Query Invalidation**: Automatic cache invalidation after mutations
+- **Pagination**: Server-side pagination with TanStack Table integration
+- **Search and Filtering**: Real-time search with debouncing and multi-filter support
+- **Soft Delete**: Soft delete functionality with restore capabilities
+
+#### Authentication & Authorization
+- **Google OAuth**: Integration with Google OAuth for authentication
+- **Protected Routes**: Route protection with `ProtectedRoute` component
+- **Token Management**: JWT token handling with automatic refresh
+- **User Session**: Persistent user session with Zustand store
+
+#### UI/UX Patterns
+- **Responsive Design**: Mobile-first approach with Tailwind CSS
+- **Loading States**: Skeleton loaders and loading indicators
+- **Error States**: Comprehensive error handling with user-friendly messages
+- **Accessibility**: ARIA-compliant components with keyboard navigation
+- **Consistent Styling**: Design system with shadcn/ui components
+
+### Error Handling
+- **Query Error Handling**: TanStack Query error boundaries and retry logic
+- **Mutation Error Handling**: Optimistic update rollback on mutation errors
+- **Network Error Handling**: Axios interceptors for global error handling
+- **User Feedback**: Toast notifications and error dialogs
+- **Fallback UI**: Error boundaries with fallback components
+
+## Admin Pages Architecture
+
+### Admin Page Structure
+All administration pages follow a consistent pattern:
+
+```tsx
+// Standard pattern for admin pages
+function EntityAdminPage() {
+  // 1. Local state for pagination, search, filters
+  const [paginationState, setPaginationState] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+  const [searchValue, setSearchValue] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
+
+  // 2. React Query hooks for data
+  const {
+    entities,
+    pagination,
+    isLoading,
+    error,
+    createEntity,
+    updateEntity,
+    deleteEntity,
+    restoreEntity,
+  } = useEntities(page, itemsPerPage, searchValue, statusFilter);
+
+  // 3. Event handlers
+  const handleCreateEntity = async (entityData: CreateEntityRequest) => {
+    try {
+      await createEntity(entityData);
+      setIsCreateDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to create entity:", error);
+    }
+  };
+
+  // 4. Filters configuration
+  const filters: Filter[] = [
+    {
+      key: "status",
+      label: "Status",
+      options: [
+        { value: "all", label: "All" },
+        { value: "enabled", label: "Active" },
+        { value: "deleted", label: "Inactive" },
+      ],
+      value: statusFilter,
+    },
+  ];
+
+  // 5. Render with DataTable and modals
+  return (
+    <div className="min-h-screen p-6">
+      <PageBreadcrumbs items={breadcrumbItems} />
+      <PageHeading title="Entity Management" description="Manage entities" />
+      
+      <DataTable
+        columns={entityColumns}
+        data={entities}
+        loading={isLoading}
+        error={error?.message}
+        pagination={pagination}
+        onPaginationChange={handlePaginationChange}
+        hasSearch={true}
+        onSearchChange={handleSearchChange}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onRowClick={handleRowClick}
+      />
+
+      <EntityCreateEditDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onCreateEntity={handleCreateEntity}
+        mode="create"
+      />
+    </div>
+  );
+}
+```
+
+### Available Admin Pages
+- **UsersAdminPage** : User management with manager/reports hierarchy
+- **TeamsAdminPage** : Team management and members
+- **ChaptersAdminPage** : Technical chapters management
+- **BusinessUnitsAdminPage** : Business units management
+- **SprintsAdminPage** : Sprint management and planning
+- **TicketsAdminPage** : Ticket and task management
+- **GradesAdminPage** : Grade/level management
+- **PerformanceAssessmentsAdminPage** : Performance assessments management
+- **GoalsAdminPage** : Goals management
+
+## React Query (TanStack Query) Patterns
+
+### Query Configuration
+```tsx
+// Global configuration in main.tsx
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: (failureCount, error) => {
+        // Don't retry on 4xx errors
+        if (error && typeof error === "object" && "status" in error) {
+          const status = (error as { status: number }).status;
+          if (status >= 400 && status < 500) return false;
+        }
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      retry: false, // No retry for mutations
+    },
+  },
+});
+```
+
+### Query Keys Pattern
+```tsx
+// Hierarchical structure for query keys
+export const userKeys = {
+  all: ["users"] as const,
+  lists: () => [...userKeys.all, "list"] as const,
+  list: (filters: {
+    page: number;
+    itemsPerPage: number;
+    search?: string;
+    status: string;
+  }) => [...userKeys.lists(), filters] as const,
+  details: () => [...userKeys.all, "detail"] as const,
+  detail: (id: string) => [...userKeys.details(), id] as const,
+};
+```
+
+### Custom Hooks Pattern
+```tsx
+// Query hook with authentication
+export const useUsersQuery = (page: number, itemsPerPage: number, search?: string) => {
+  const { token } = useAuthStore();
+
+  return useQuery({
+    queryKey: userKeys.list({ page, itemsPerPage, search, status: "all" }),
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      return await userApiService.getUsers(itemsPerPage, (page - 1) * itemsPerPage, search);
+    },
+    enabled: !!token, // Query enabled only if token is available
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+};
+
+// Mutation hook with optimistic updates
+export const useUpdateUserMutation = () => {
+  const queryClient = useQueryClient();
+  const { token } = useAuthStore();
+
+  return useMutation({
+    mutationFn: async ({ id, userData }: { id: string; userData: UpdateUserRequest }) => {
+      if (!token) throw new Error("No authentication token");
+      return await userApiService.updateUser(id, userData);
+    },
+    onMutate: async ({ id, userData }) => {
+      // Cancel ongoing queries
+      await queryClient.cancelQueries({ queryKey: userKeys.lists() });
+      
+      // Save previous state
+      const previousUsers = queryClient.getQueryData(userKeys.lists());
+      
+      // Optimistic update
+      queryClient.setQueriesData(
+        { queryKey: userKeys.lists() },
+        (old: PaginatedResponse<User> | undefined) => {
+          if (!old?.data) return old;
+          return {
+            ...old,
+            data: old.data.map((user: User) =>
+              user.id === id ? { ...user, ...userData } : user
+            ),
+          };
+        }
+      );
+      
+      return { previousUsers };
+    },
+    onError: (_, __, context) => {
+      // Rollback on error
+      if (context?.previousUsers) {
+        queryClient.setQueriesData({ queryKey: userKeys.lists() }, context.previousUsers);
+      }
+    },
+    onSettled: () => {
+      // Invalidate and refetch after success or error
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+    },
+  });
+};
+```
+
+### Combined Hooks Pattern
+```tsx
+// Combined hook for easier usage
+export const useUsers = (page: number, itemsPerPage: number, search?: string) => {
+  const usersQuery = useUsersQuery(page, itemsPerPage, search);
+  const createUserMutation = useCreateUserMutation();
+  const updateUserMutation = useUpdateUserMutation();
+  const deleteUserMutation = useDeleteUserMutation();
+
+  return {
+    // Query data
+    users: usersQuery.data?.data || [],
+    pagination: usersQuery.data?.meta?.pagination,
+    isLoading: usersQuery.isLoading,
+    error: usersQuery.error,
+    isError: usersQuery.isError,
+
+    // Mutations
+    createUser: createUserMutation.mutateAsync,
+    updateUser: updateUserMutation.mutateAsync,
+    deleteUser: deleteUserMutation.mutateAsync,
+
+    // Mutation states
+    isCreating: createUserMutation.isPending,
+    isUpdating: updateUserMutation.isPending,
+    isDeleting: deleteUserMutation.isPending,
+
+    // Utilities
+    refetch: usersQuery.refetch,
+  };
+};
+```
+
+## Reusable Components
+
+### DataTable Component
+Reusable table component with all features:
+
+```tsx
+interface DataTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
+  pagination?: PaginationMeta;
+  loading?: boolean;
+  error?: string | null;
+  isError?: boolean;
+  onPaginationChange?: (pagination: PaginationState) => void;
+  hasSearch?: boolean;
+  onSearchChange?: (search: string) => void;
+  searchValue?: string;
+  searchPlaceholder?: string;
+  hasPageSize?: boolean;
+  pageSizeOptions?: number[];
+  filters?: Filter[];
+  onFilterChange?: (filterKey: string, value: string) => void;
+  onRowClick?: (row: TData) => void;
+}
+
+// Included features:
+// - Server-side pagination with TanStack Table
+// - Real-time search
+// - Multiple filters
+// - Page size selection
+// - Loading and error states
+// - Row click handling
+// - Event handling for action buttons
+```
+
+### Modal Components
+Reusable modals for create/edit operations:
+
+```tsx
+// Pattern for edit modals
+interface EntityCreateEditDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreateEntity?: (data: CreateEntityRequest) => Promise<void>;
+  onUpdateEntity?: (id: string, data: UpdateEntityRequest) => Promise<void>;
+  isLoading: boolean;
+  mode: "create" | "edit";
+  entity?: Entity;
+  availableOptions?: Option[];
+}
+
+// Features:
+// - Create and edit modes
+// - Form validation
+// - Loading states
+// - Error handling
+// - Dynamic options (managers, teams, etc.)
+```
+
+### Page Components
+Reusable page components:
+
+```tsx
+// PageHeading - Page title and description
+interface PageHeadingProps {
+  title: string;
+  description?: string;
+}
+
+// PageBreadcrumbs - Breadcrumb navigation
+interface BreadcrumbItem {
+  label: string;
+  path: string;
+  isActive: boolean;
+}
+
+// FormField - Form field with label and validation
+interface FormFieldProps {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}
+```
+
+### UI Primitives (shadcn/ui)
+Reusable base UI components:
+
+- **Button** : Buttons with variants (default, destructive, outline, secondary, ghost, link)
+- **Input** : Input fields with validation
+- **Select** : Selectors with grouped options
+- **Table** : Table components (Table, TableBody, TableCell, TableHead, TableHeader, TableRow)
+- **Dialog** : Modals and dialogs
+- **Avatar** : Avatars with fallback
+- **Badge** : Badges for statuses
+- **Dropdown Menu** : Dropdown menus
+- **Navigation Menu** : Main navigation
+- **Pagination** : Pagination with controls
+- **Popover** : Contextual popovers
+- **Multi Select** : Multiple selection
+- **Command** : Command palette
+- **Alert Dialog** : Alert dialogs
+
+### Utility Functions
+Reusable utility functions:
+
+```tsx
+// cn() - Tailwind classes combination
+import { cn } from "@/lib/utils";
+
+// Usage
+<div className={cn("base-classes", condition && "conditional-classes")} />
+
+// API Service Pattern
+class EntityApiService {
+  async getEntities(limit: number, offset: number, search?: string): Promise<PaginatedResponse<Entity>> {
+    const params: Record<string, string | number> = { limit, offset };
+    if (search && search.trim()) {
+      params.search = search.trim();
+    }
+    
+    const response = await api.get("/api/entities", { params });
+    return response.data;
+  }
+  
+  // CRUD operations...
+}
+```
+
+## 📋 **Frontend Rules for Administration Pages**
+
+### 🎯 **Administration Page Structure**
+
+#### **1. Main Administration Page**
+```typescript
+// Standard structure for an administration page
+function EntityAdminPage() {
+  // Pagination states
+  const [paginationState, setPaginationState] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  // Search and filter states
+  const [searchValue, setSearchValue] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [customFilter, setCustomFilter] = useState("all");
+
+  // Modal states
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
+
+  // Pagination conversion
+  const page = paginationState.pageIndex + 1;
+  const itemsPerPage = paginationState.pageSize;
+
+  // Custom hook for the entity
+  const {
+    entities,
+    pagination,
+    isLoading,
+    error,
+    isError,
+    createEntity,
+    updateEntity,
+    deleteEntity,
+    restoreEntity,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    isRestoring,
+  } = useEntities(
+    page,
+    itemsPerPage,
+    searchValue || undefined,
+    statusFilter === "all" ? undefined : statusFilter,
+    customFilter === "all" ? undefined : customFilter
+  );
+}
+```
+
+#### **2. Filter Management**
+```typescript
+// Filter definition
+const filters: Filter[] = [
+  {
+    key: "customFilter",
+    label: "Custom Filter",
+    options: [
+      { value: "all", label: "All" },
+      { value: "option1", label: "Option 1" },
+      { value: "option2", label: "Option 2" },
+    ],
+    value: customFilter,
+    placeholder: "Select filter",
+  },
+  {
+    key: "status",
+    label: "Deletion Status",
+    options: [
+      { value: "all", label: "All" },
+      { value: "enabled", label: "Active" },
+      { value: "deleted", label: "Inactive" },
+    ],
+    value: statusFilter,
+    placeholder: "Select deletion status",
+  },
+];
+
+// Filter change handling
+const handleFilterChange = (filterKey: string, value: string) => {
+  if (filterKey === "status") {
+    setStatusFilter(value);
+  } else if (filterKey === "customFilter") {
+    setCustomFilter(value);
+  }
+  setPaginationState((prev) => ({ ...prev, pageIndex: 0 }));
+};
+```
+
+### 🔧 **FormField Components**
+
+#### **3. Correct FormField Usage**
+```typescript
+// ❌ WRONG - Don't use children with FormField
+<FormField label="Field Name" error={errors.field}>
+  <Input type="text" value={formData.field} onChange={...} />
+</FormField>
+
+// ✅ CORRECT - Use type="input" for input fields
+<FormField
+  type="input"
+  label="Field Name"
+  error={errors.field}
+  value={formData.field}
+  onChange={(value: string) => handleInputChange("field", value)}
+  placeholder="Enter field value"
+/>
+
+// ✅ CORRECT - Use type="select" for dropdown lists
+<FormField
+  type="select"
+  label="Status"
+  error={errors.status}
+  value={formData.status}
+  onChange={(value: string | undefined) => handleInputChange("status", value)}
+  options={statusOptions}
+  placeholder="Select status"
+/>
+```
+
+#### **4. Supported Field Types**
+```typescript
+// Input fields
+<FormField
+  type="input"
+  inputType="text"           // text, email, password, number
+  inputType="datetime-local" // for dates
+  inputType="date"           // for simple dates
+  inputType="time"           // for times
+/>
+
+// Dropdown lists
+<FormField
+  type="select"
+  options={[
+    { value: "value1", label: "Label 1" },
+    { value: "value2", label: "Label 2" },
+  ]}
+/>
+```
+
+### 🎨 **Table Components**
+
+#### **5. Standardized Table Columns**
+```typescript
+// Column structure with actions
+export const entityColumns = ({
+  onDeleteEntity,
+  onRestoreEntity,
+  isDeleting,
+  isRestoring,
+}: EntityColumnsProps): ColumnDef<Entity>[] => [
+  {
+    accessorKey: "name",
+    header: "Name",
+  },
+  {
+    accessorKey: "status", // Business status (e.g., Planned, Active, Closed)
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.original.status;
+      const statusVariants = {
+        Planned: "secondary",
+        Active: "default",
+        Closed: "destructive",
+      } as const;
+
+      return (
+        <Badge variant={statusVariants[status] || "secondary"}>
+          {status}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "deletedAt", // Deletion status
+    header: "Status",
+    cell: ({ row }) => {
+      return (
+        <Badge variant={row.original.deletedAt ? "destructive" : "success"}>
+          {row.original.deletedAt ? "Deleted" : "Active"}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const entity = row.original;
+      const isDeleted = !!entity.deletedAt;
+
+      return (
+        <div className="flex items-center space-x-2">
+          {isDeleted ? (
+            <ConfirmDialog
+              trigger={
+                <Button variant="ghost" size="icon">
+                  <RotateCcw className="w-4 h-4 text-blue-600 hover:text-blue-900 transition-colors" />
+                </Button>
+              }
+              title="Restore Entity"
+              description={`Are you sure you want to restore ${entity.name}?`}
+              confirmText="Restore Entity"
+              onConfirm={() => onRestoreEntity(entity.id)}
+              isLoading={isRestoring}
+              variant="default"
+            />
+          ) : (
+            <ConfirmDialog
+              trigger={
+                <Button variant="ghost" size="icon">
+                  <Trash2 className="w-4 h-4 text-red-600 hover:text-red-900 transition-colors" />
+                </Button>
+              }
+              title="Delete Entity"
+              description={`Are you sure you want to delete ${entity.name}?`}
+              confirmText="Delete Entity"
+              onConfirm={() => onDeleteEntity(entity.id)}
+              isLoading={isDeleting}
+              variant="destructive"
+            />
+          )}
+        </div>
+      );
+    },
+  },
+];
+```
+
+### 🔄 **Hooks and Services**
+
+#### **6. TanStack Query Hooks Structure**
+```typescript
+// Standardized query keys
+export const entityKeys = {
+  all: ["entities"] as const,
+  lists: () => [...entityKeys.all, "list"] as const,
+  list: (filters: {
+    page: number;
+    itemsPerPage: number;
+    search?: string;
+    status?: string;
+    customFilter?: string;
+  }) => [...entityKeys.lists(), filters] as const,
+  details: () => [...entityKeys.all, "detail"] as const,
+  detail: (id: string) => [...entityKeys.details(), id] as const,
+};
+
+// Query hook with filters
+export const useEntitiesQuery = (
+  page: number,
+  itemsPerPage: number,
+  search?: string,
+  status?: string,
+  customFilter?: string
+) => {
+  const { token } = useAuthStore();
+
+  return useQuery({
+    queryKey: entityKeys.list({ page, itemsPerPage, search, status, customFilter }),
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      return await entityApiService.getEntities(
+        itemsPerPage,
+        (page - 1) * itemsPerPage,
+        search,
+        status,
+        customFilter
+      );
+    },
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+};
+```
+
+#### **7. Standardized API Service**
+```typescript
+class EntityApiService {
+  async getEntities(
+    limit: number = 10,
+    offset: number = 0,
+    search?: string,
+    status?: string,
+    customFilter?: string
+  ): Promise<PaginatedResponse<Entity>> {
+    try {
+      const params: Record<string, string | number> = { limit, offset };
+      if (search && search.trim()) {
+        params.name = search.trim();
+      }
+      if (status && status !== "all") {
+        params.status = status;
+      }
+      if (customFilter && customFilter !== "all") {
+        params.customFilter = customFilter;
+      }
+
+      const response = await api.get("/api/entities", { params });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching entities:", error);
+      throw error;
+    }
+  }
+}
+```
+
+### 🎭 **Modals**
+
+#### **8. Modal Structure**
+```typescript
+// Create/edit modal
+<PopupModal
+  isOpen={isCreateDialogOpen}
+  onClose={() => setIsCreateDialogOpen(false)}
+  title="Create Entity"
+  size="md"
+  showFooter={false} // ← IMPORTANT: Disable default footer
+>
+  <div className="space-y-4">
+    {/* FormFields here */}
+    <div className="flex justify-end space-x-2 pt-4">
+      <Button variant="outline" onClick={onClose} disabled={isLoading}>
+        Cancel
+      </Button>
+      <Button onClick={handleSubmit} disabled={isLoading}>
+        {isLoading ? "Creating..." : "Create Entity"}
+      </Button>
+    </div>
+  </div>
+</PopupModal>
+```
+
+### 🔍 **Search and Filters**
+
+#### **9. Case-Insensitive Search (Backend)**
+```php
+// In Repository
+if (null !== $search) {
+    $qb->andWhere('LOWER(e.name) LIKE LOWER(:search)')
+       ->setParameter('search', '%' . $search . '%')
+    ;
+}
+```
+
+#### **10. Multiple Filter Management**
+```typescript
+// Frontend: Distinct filter management
+const [statusFilter, setStatusFilter] = useState("all"); // For deletedAt
+const [entityStatusFilter, setEntityStatusFilter] = useState("all"); // For business status
+
+// Backend: Distinct parameters
+public function listEntities(
+    ?string $search = null, 
+    ?string $deletionStatus = null,  // enabled/deleted
+    ?string $entityStatus = null,    // Business status
+    int $limit = 10, 
+    int $offset = 0
+): array
+```
+
+#### **11. Soft Delete Status Labeling Rules**
+```typescript
+// ✅ CORRECT - Use "Enabled"/"Deleted" for soft delete status
+const filters: Filter[] = [
+  {
+    key: "status",
+    label: "Deletion Status", // or just "Status"
+    options: [
+      { value: "all", label: "All" },
+      { value: "enabled", label: "Enabled" },    // ← CORRECT
+      { value: "deleted", label: "Deleted" },    // ← CORRECT
+    ],
+    value: statusFilter,
+    placeholder: "Select deletion status",
+  },
+];
+
+// ✅ CORRECT - Table column display
+{
+  accessorKey: "status",
+  header: "Status",
+  cell: ({ row }) => {
+    return (
+      <Badge variant={row.original.deletedAt ? "destructive" : "success"}>
+        {row.original.deletedAt ? "Deleted" : "Enabled"}  // ← CORRECT
+      </Badge>
+    );
+  },
+},
+
+// ❌ WRONG - Never use "Active"/"Inactive" for soft delete
+// { value: "enabled", label: "Active" },     // ← WRONG
+// { value: "deleted", label: "Inactive" },   // ← WRONG
+// {row.original.deletedAt ? "Inactive" : "Active"}  // ← WRONG
+```
+
+**Why this matters:**
+- **Clarity**: "Enabled"/"Deleted" is explicit about soft delete status
+- **Consistency**: Avoids confusion with business status (Active/Planned/Closed)
+- **User Experience**: Clear distinction between deletion state and business state
+
+### 📱 **Responsive Design**
+
+#### **12. Standardized Tailwind Classes**
+```typescript
+// Main page
+<div className="min-h-screen p-6">
+  <div className="mb-4">
+    <PageBreadcrumbs items={breadcrumbItems} />
+  </div>
+  <div className="flex justify-between items-center mb-6">
+    <PageHeading title="Entity Management" description="Manage entities" />
+    <Button onClick={() => setIsCreateDialogOpen(true)}>Create Entity</Button>
+  </div>
+  <div className="mx-auto">
+    <DataTable
+      columns={columns}
+      data={entities || []}
+      loading={isLoading}
+      error={error?.message}
+      isError={isError}
+      pagination={pagination}
+      onPaginationChange={handlePaginationChange}
+      hasSearch={true}
+      onSearchChange={handleSearchChange}
+      searchValue={searchValue}
+      searchPlaceholder="Search entities..."
+      hasPageSize={true}
+      pageSizeOptions={[10, 20, 50, 100]}
+      filters={filters}
+      onFilterChange={handleFilterChange}
+      onRowClick={handleRowClick}
+    />
+  </div>
+</div>
+```
+
+### ✅ **Validation Checklist**
+
+#### **13. Mandatory Checkpoints**
+- [ ] **FormField**: Use `type="input"` or `type="select"`, no children
+- [ ] **PopupModal**: `showFooter={false}` to avoid duplicate buttons
+- [ ] **Filters**: Clear distinction between deletion status and business status
+- [ ] **Soft Delete Labels**: Use "Enabled"/"Deleted" for soft delete status (never "Active"/"Inactive")
+- [ ] **Search**: Case-insensitive on backend
+- [ ] **Actions**: Delete/restore buttons with ConfirmDialog
+- [ ] **Pagination**: Correct conversion between TanStack Table and API
+- [ ] **Hooks**: Consistent query keys and proper invalidation
+- [ ] **Types**: Complete and consistent TypeScript interfaces
+
+### 🚀 **Quick Template for New Admin Page**
+
+```typescript
+// 1. Create the administration page
+function NewEntityAdminPage() {
+  const [paginationState, setPaginationState] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+  const [searchValue, setSearchValue] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
+
+  const page = paginationState.pageIndex + 1;
+  const itemsPerPage = paginationState.pageSize;
+
+  const {
+    entities,
+    pagination,
+    isLoading,
+    error,
+    isError,
+    createEntity,
+    updateEntity,
+    deleteEntity,
+    restoreEntity,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    isRestoring,
+  } = useEntities(page, itemsPerPage, searchValue || undefined, statusFilter === "all" ? undefined : statusFilter);
+
+  // Handlers...
+  const handlePaginationChange = (newPagination: PaginationState) => {
+    setPaginationState(newPagination);
+  };
+
+  const handleSearchChange = (search: string) => {
+    setSearchValue(search);
+    setPaginationState((prev) => ({ ...prev, pageIndex: 0 }));
+  };
+
+  const handleFilterChange = (filterKey: string, value: string) => {
+    if (filterKey === "status") {
+      setStatusFilter(value);
+    }
+    setPaginationState((prev) => ({ ...prev, pageIndex: 0 }));
+  };
+
+  const handleRowClick = (entity: Entity) => {
+    setSelectedEntity(entity);
+    setIsEditDialogOpen(true);
+  };
+
+  // Filter definition
+  const filters: Filter[] = [
+    {
+      key: "status",
+      label: "Deletion Status",
+      options: [
+        { value: "all", label: "All" },
+        { value: "enabled", label: "Active" },
+        { value: "deleted", label: "Inactive" },
+      ],
+      value: statusFilter,
+      placeholder: "Select deletion status",
+    },
+  ];
+
+  // Columns with actions
+  const columns = entityColumns({
+    onDeleteEntity: deleteEntity,
+    onRestoreEntity: restoreEntity,
+    isDeleting,
+    isRestoring,
+  });
+
+  return (
+    <div className="min-h-screen p-6">
+      <div className="mb-4">
+        <PageBreadcrumbs items={[{ label: "Entity Management", path: "/admin/entities", isActive: true }]} />
+      </div>
+      <div className="flex justify-between items-center mb-6">
+        <PageHeading title="Entity Management" description="Manage entities" />
+        <Button onClick={() => setIsCreateDialogOpen(true)}>Create Entity</Button>
+      </div>
+      <div className="mx-auto">
+        <DataTable
+          columns={columns}
+          data={entities || []}
+          loading={isLoading}
+          error={error?.message}
+          isError={isError}
+          pagination={pagination}
+          onPaginationChange={handlePaginationChange}
+          hasSearch={true}
+          onSearchChange={handleSearchChange}
+          searchValue={searchValue}
+          searchPlaceholder="Search entities..."
+          hasPageSize={true}
+          pageSizeOptions={[10, 20, 50, 100]}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onRowClick={handleRowClick}
+        />
+      </div>
+
+      {/* Modals */}
+      <EntityCreateEditDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onCreateEntity={createEntity}
+        isLoading={isCreating}
+        mode="create"
+      />
+
+      <EntityCreateEditDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedEntity(null);
+        }}
+        onUpdateEntity={updateEntity}
+        isLoading={isUpdating}
+        mode="edit"
+        entity={selectedEntity || undefined}
+      />
+    </div>
+  );
+}
+```
+
+These rules will allow you to quickly and consistently create new administration pages following the same patterns as the Sprints page! 🚀
+Remember: Always follow the established patterns in the codebase and maintain consistency across the project. Any documentation, code, or comment must be written in English.

@@ -1,0 +1,34 @@
+---
+description: BIOMIND project conventions (Next.js static game)
+globs: "**/*.{ts,tsx}"
+alwaysApply: true
+---
+
+# BIOMIND Project Rules
+
+This is a **Next.js static export** game (no backend, no Docker). Only the following conventions from the project cursor rules apply.
+
+## Language and documentation
+
+- All documentation, code, and comments must be written in **English**.
+
+## Git
+
+- Use **conventional commits** (e.g. `feat:`, `fix:`, `chore:`).
+- Write descriptive commit messages.
+- Use feature branches for new features.
+- **Do not commit before being asked to.**
+
+## TypeScript and React
+
+- Use **TypeScript interfaces** for component props (e.g. `interface BoardProps { ... }`).
+- Use **functional components** with hooks.
+- **Naming**: PascalCase for components; camelCase for functions, variables, and hooks (e.g. `useGameState`).
+- Prefer named exports for components; default export only for pages.
+- Use path alias `@/` for imports (e.g. `@/lib/gameLogic`, `@/components/Board`).
+
+## Code quality
+
+- Run `npm run lint` before committing.
+- Run `npm run format` to fix formatting (Prettier) when available.
+- Follow established patterns in the codebase.
