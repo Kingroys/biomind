@@ -129,20 +129,21 @@ body {
   justify-content: center;
 }
 
-.board__grid-and-feedback {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  align-items: flex-start;
-}
-
 .board__guess-rows {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
 .board__guess-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 44px;
+}
+
+.board__guess-slots {
   display: flex;
   gap: 8px;
 }

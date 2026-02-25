@@ -34,10 +34,10 @@ export function Board({ secretCode, history, revealCode, codeLabel }: BoardProps
           />
         ))}
       </div>
-      <div className="board__grid-and-feedback">
-        <div className="board__guess-rows">
-          {Array.from({ length: ROWS }, (_, rowIndex) => (
-            <div key={rowIndex} className="board__guess-row">
+      <div className="board__guess-rows">
+        {Array.from({ length: ROWS }, (_, rowIndex) => (
+          <div key={rowIndex} className="board__guess-row">
+            <div className="board__guess-slots">
               {[0, 1, 2, 3].map((colIndex) => {
                 const entry = history[rowIndex];
                 const guess = entry?.guess ?? null;
@@ -51,16 +51,11 @@ export function Board({ secretCode, history, revealCode, codeLabel }: BoardProps
                 );
               })}
             </div>
-          ))}
-        </div>
-        <div className="board__feedback-column">
-          {Array.from({ length: ROWS }, (_, rowIndex) => (
             <FeedbackPegs
-              key={rowIndex}
               feedback={history[rowIndex]?.feedback ?? null}
             />
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );
