@@ -27,6 +27,10 @@ npm run build
 
 Output is in the `out/` directory.
 
+## Background image
+
+The game uses a full-screen background image (`public/background.jpg`) with a pixelated style. Replace it with your own pixelised Bioman characters image; the app will render it with `image-rendering: pixelated` and a dark overlay so the UI stays readable.
+
 ## Lint and format
 
 ```bash

@@ -6,9 +6,10 @@ import { HelmetSlot } from "./HelmetSlot";
 interface CurrentGuessProps {
   guess: Guess;
   onSlotClick: (index: number) => void;
-  onSubmit: () => void;
+  onSubmit?: () => void;
   disabled?: boolean;
   canSubmit: boolean;
+  showSubmit?: boolean;
 }
 
 export function CurrentGuess({
@@ -17,6 +18,7 @@ export function CurrentGuess({
   onSubmit,
   disabled,
   canSubmit,
+  showSubmit = true,
 }: CurrentGuessProps) {
   return (
     <div className="current-guess">
@@ -30,14 +32,16 @@ export function CurrentGuess({
           />
         ))}
       </div>
-      <button
-        type="button"
-        className="current-guess__submit"
-        onClick={onSubmit}
-        disabled={disabled || !canSubmit}
-      >
-        Submit
-      </button>
+      {showSubmit && (
+        <button
+          type="button"
+          className="current-guess__submit"
+          onClick={onSubmit}
+          disabled={disabled || !canSubmit}
+        >
+          Submit
+        </button>
+      )}
     </div>
   );
 }

@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
-import { Silkscreen } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 
-const silkscreen = Silkscreen({ weight: ["400", "700"], subsets: ["latin"] });
+const outfit = Outfit({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "BIOMIND",
-  description: "Can you crack the code? Mastermind with bioman faces.",
+  description: "Crack the code. A minimal Mastermind game.",
 };
 
 export default function RootLayout({
@@ -15,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={silkscreen.className}>
+    <html lang="en" className={outfit.className}>
       <body>{children}</body>
     </html>
   );

@@ -20,13 +20,13 @@ export function HelmetSlot({
   return (
     <button
       type="button"
-      className={`helmet-slot ${hidden ? "helmet-slot--hidden" : ""} ${interactive ? "helmet-slot--interactive" : ""}`}
+      className={`peg-slot ${hidden ? "peg-slot--hidden" : ""} ${interactive ? "peg-slot--interactive" : ""}`}
       onClick={handleClick}
       disabled={!interactive}
-      aria-label={helmet ? `Helmet ${helmet}` : "Empty slot"}
+      aria-label={helmet ? `Color ${helmet}` : "Empty slot"}
     >
       {!hidden && helmet && (
-        <HelmetIcon id={helmet} className="helmet-slot__icon" />
+        <HelmetIcon id={helmet} className="peg-slot__icon" />
       )}
     </button>
   );

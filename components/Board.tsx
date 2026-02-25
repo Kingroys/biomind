@@ -16,11 +16,15 @@ interface BoardProps {
   secretCode: Code;
   history: HistoryEntry[];
   revealCode: boolean;
+  codeLabel?: string;
 }
 
-export function Board({ secretCode, history, revealCode }: BoardProps) {
+export function Board({ secretCode, history, revealCode, codeLabel }: BoardProps) {
   return (
     <div className="board">
+      {codeLabel && revealCode && (
+        <p className="board__code-label">{codeLabel}</p>
+      )}
       <div className="board__code-row">
         {secretCode.map((helmet, i) => (
           <HelmetSlot

@@ -7,7 +7,6 @@ import {
   isGuessComplete,
   type Code,
   type Guess,
-  type Feedback,
   type HelmetId,
   type HistoryEntry,
 } from "@/lib/gameLogic";
@@ -48,13 +47,8 @@ function useGameState() {
     const feedback = evaluateGuess(secretCode, currentGuess);
     setHistory((h) => [...h, { guess: [...currentGuess], feedback }]);
     setCurrentGuess([...EMPTY_GUESS]);
-    if (feedback.red === 4) {
-      setStatus("won");
-      return;
-    }
-    if (history.length + 1 >= 6) {
-      setStatus("lost");
-    }
+    if (feedback.red === 4) setStatus("won");
+    else if (history.length + 1 >= 6) setStatus("lost");
   }, [secretCode, currentGuess, history.length]);
 
   const newGame = useCallback(() => {
@@ -93,44 +87,60 @@ export default function Home() {
     isGuessComplete(currentGuess) && history.length < 6 && !gameOver;
 
   return (
-    <main className="game-screen">
-      <div className="title-block">
-        <span className="question-marks">???</span>
-        <h1 className="game-title">BIOMIND</h1>
-      </div>
+    <main className="screen">
+      <div className="container">
+        <header className="header">
+          <h1 className="title">BIOMIND</h1>
+          <p className="subtitle">Guess the 4-color code in 6 tries</p>
+        </header>
 
-      <div className="console">
-        <div className="console__content">
-          <Palette onSelect={addToGuess} disabled={gameOver} />
+        <p className="rules">
+          <span className="rules__peg rules__peg--exact" /> = right color, right
+          spot &nbsp;·&nbsp;{" "}
+          <span className="rules__peg rules__peg--wrong" /> = right color,
+          wrong spot
+        </p>
+
+        <section className="game">
           <Board
             secretCode={secretCode}
             history={history}
             revealCode={gameOver}
+            codeLabel={status === "lost" ? "The code was:" : undefined}
           />
+
+          <div className="current-row">
+            <CurrentGuess
+              guess={currentGuess}
+              onSlotClick={removeFromGuess}
+              onSubmit={submitGuess}
+              disabled={gameOver}
+              canSubmit={!!canSubmit}
+              showSubmit={true}
+            />
+          </div>
+
           <Palette onSelect={addToGuess} disabled={gameOver} />
-        </div>
-        <CurrentGuess
-          guess={currentGuess}
-          onSlotClick={removeFromGuess}
-          onSubmit={submitGuess}
-          disabled={gameOver}
-          canSubmit={!!canSubmit}
-        />
+        </section>
+
         {gameOver && (
-          <div className="game-over">
-            <p className="game-over__message">
-              {status === "won" ? "You cracked the code!" : "Out of tries!"}
+          <div className="result" role="alert">
+            <p className="result__message">
+              {status === "won" ? (
+                <>You cracked it!</>
+              ) : (
+                <>Out of tries. The code is shown above.</>
+              )}
             </p>
             <button
               type="button"
-              className="game-over__new-game"
+              className="result__button"
               onClick={newGame}
             >
               New game
             </button>
           </div>
         )}
-        <p className="tagline">CAN YOU CRACK THE CODE?</p>
       </div>
     </main>
   );
