@@ -38,7 +38,6 @@ export function Board({
       )}
       <div className="board__code-row board__guess-row">
         <div className="board__line-number board__line-number--empty" aria-hidden />
-        <div className="board__feedback-spacer" aria-hidden />
         <div className="board__guess-slots">
           {secretCode.map((helmet, i) => (
             <HelmetSlot
@@ -68,7 +67,6 @@ export function Board({
               <span className="board__line-number" aria-label={`Line ${rowIndex + 1}`}>
                 #{rowIndex + 1}
               </span>
-              <div className="board__feedback-spacer" aria-hidden />
               <div className="board__guess-slots">
                 {[0, 1, 2, 3].map((colIndex) => (
                   <HelmetSlot

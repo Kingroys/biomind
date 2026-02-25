@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Lilita+One&family=Quicksand:wght@500;600;700&display=swap");
+
 *,
 *::before,
 *::after {
@@ -9,6 +11,14 @@
 :root {
   --radius: 12px;
   --radius-sm: 8px;
+  /* Vertical rhythm: use for margins, padding, gaps */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-base: 1rem;
+  --space-lg: 1.25rem;
+  --space-xl: 1.5rem;
+  --space-2xl: 2rem;
   /* Brand colors (title, accents) */
   --blue-light: #4dd0ff;
   --blue-mid: #1a8ccc;
@@ -25,24 +35,29 @@
 html {
   font-size: 16px;
   min-height: 100%;
-  background: linear-gradient(180deg, var(--grey-800) 0%, var(--grey-900) 50%, var(--grey-800) 100%);
+  background: #1a1a1a;
 }
 
 body {
   min-height: 100vh;
-  font-family: inherit;
+  font-family: "Quicksand", sans-serif;
   color: rgba(255, 255, 255, 0.9);
   line-height: 1.5;
-  background: linear-gradient(180deg, var(--grey-800) 0%, var(--grey-900) 50%, var(--grey-800) 100%);
+  background: #1a1a1a;
 }
 
 .screen {
   min-height: 100vh;
-  padding: 2rem 1rem 3rem;
+  padding: var(--space-2xl) var(--space-base);
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  background: linear-gradient(180deg, var(--grey-800) 0%, var(--grey-900) 50%, var(--grey-800) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--grey-800) 0%,
+    var(--grey-900) 50%,
+    var(--grey-800) 100%
+  );
   position: relative;
   overflow: hidden;
 }
@@ -53,12 +68,12 @@ body {
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(2px 2px at 20% 30%, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(2px 2px at 60% 70%, rgba(255, 255, 255, 0.4), transparent),
-    radial-gradient(2px 2px at 80% 20%, rgba(255, 255, 255, 0.4), transparent);
+    radial-gradient(2px 2px at 20% 30%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(2px 2px at 60% 70%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(2px 2px at 80% 20%, rgba(255, 255, 255, 0.35), transparent);
   background-size: 200% 200%;
   animation: figma-twinkle 8s ease-in-out infinite;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 @keyframes figma-twinkle {
@@ -72,7 +87,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: var(--space-xl);
   position: relative;
   z-index: 1;
 }
@@ -82,13 +97,14 @@ body {
 }
 
 .title {
+  font-family: "Lilita One", sans-serif;
   background: linear-gradient(180deg, var(--blue-light) 0%, var(--blue-mid) 50%, var(--blue-dark) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-size: 3rem;
-  font-weight: 900;
-  letter-spacing: 0.05em;
+  font-size: 4rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
 }
 
 .title .title-mind {
@@ -99,9 +115,10 @@ body {
 }
 
 .subtitle {
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.85);
-  margin-top: 0.25rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: var(--space-xs);
 }
 
 .rules {
@@ -111,7 +128,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: var(--space-xs);
 }
 
 .rules__peg {
@@ -135,7 +152,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
+  gap: var(--space-lg);
 }
 
 .game-actions {
@@ -143,33 +160,31 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-base);
 }
 
-/* Board – blue gradient only, 0.7 opacity; width fits content */
+/* Board – solid lighter brown; brown border; 3D box shadow */
 .board {
   width: fit-content;
   max-width: 100%;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 86, 166, 0.7) 0%,
-    rgba(26, 140, 204, 0.7) 50%,
-    rgba(77, 208, 255, 0.7) 100%
-  );
-  border: 4px solid var(--grey-900);
+  background: #d4b896;
+  border: 4px solid #3d2314;
   border-radius: var(--radius);
-  padding: 1rem 1.25rem;
+  padding: var(--space-base) var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  gap: var(--space-base);
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.35),
+    0 10px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .board__code-label {
   font-size: 0.85rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
-  margin-bottom: -0.25rem;
+  margin-bottom: calc(-1 * var(--space-xs));
 }
 
 .board__code-row {
@@ -189,14 +204,14 @@ body {
 .board__guess-rows {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-lg);
 }
 
 .board__guess-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: var(--space-lg);
   min-height: 56px;
 }
 
@@ -218,14 +233,14 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.35rem 0;
-  background: var(--grey-900);
+  padding: var(--space-sm) 0;
+  background: linear-gradient(180deg, #8b6b4a 0%, #7d5c38 50%, #6b4a2d 100%);
   border-radius: var(--radius-sm);
   border: none;
   box-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.35),
+    0 2px 0 rgba(0, 0, 0, 0.3),
     0 4px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .board__line-number--empty {
@@ -233,7 +248,7 @@ body {
   min-width: 2.5rem;
   visibility: hidden;
   user-select: none;
-  padding: 0.35rem 0;
+  padding: var(--space-sm) 0;
 }
 
 .board__feedback-spacer {
@@ -243,32 +258,32 @@ body {
 
 .board__divider {
   width: 100%;
-  margin: 12px 0;
+  margin: var(--space-md) 0;
   border: none;
-  border-top: 2px solid rgba(255, 255, 255, 0.2);
+  border-top: 2px solid rgba(61, 35, 20, 0.6);
 }
 
-/* Peg slot (proposal container circles) */
+/* Peg slot (proposal container circles) – dark brown gradient on board */
 .peg-slot {
   width: 56px;
   height: 56px;
   border-radius: 50%;
   border: none;
-  background: var(--grey-900);
+  background: linear-gradient(180deg, #8b6b4a 0%, #7d5c38 50%, #6b4a2d 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: default;
   flex-shrink: 0;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: box-shadow 0.15s, filter 0.15s;
   box-shadow:
     0 4px 0 rgba(0, 0, 0, 0.3),
     0 6px 12px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .peg-slot--hidden {
-  background: var(--grey-900);
+  background: linear-gradient(180deg, #8b6b4a 0%, #7d5c38 50%, #6b4a2d 100%);
 }
 
 .peg-slot--hidden::after {
@@ -283,11 +298,11 @@ body {
 }
 
 .peg-slot--interactive:hover:not(:disabled) {
-  background: var(--grey-700);
+  filter: brightness(1.15);
   box-shadow:
-    0 6px 0 rgba(0, 0, 0, 0.3),
+    0 6px 0 rgba(0, 0, 0, 0.35),
     0 8px 16px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .peg-slot__icon {
@@ -316,8 +331,8 @@ body {
 }
 
 .feedback-peg--empty {
-  background: var(--grey-900);
-  border: 1px solid var(--grey-700);
+  background: linear-gradient(180deg, #8b6b4a 0%, #7d5c38 50%, #6b4a2d 100%);
+  border: 1px solid #6b4a2d;
 }
 
 /* Blue = correct color & position (title blue) */
@@ -338,7 +353,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-md);
 }
 
 .current-row__label {
@@ -351,18 +366,18 @@ body {
 .current-guess {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-md);
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .current-guess__slots {
   display: flex;
-  gap: 10px;
+  gap: var(--space-sm);
 }
 
 .current-guess__submit {
-  padding: 0.6rem 1.25rem;
+  padding: var(--space-sm) var(--space-lg);
   font-size: 0.95rem;
   font-weight: 800;
   font-family: inherit;
@@ -386,7 +401,7 @@ body {
 /* Palette */
 .palette {
   display: flex;
-  gap: 10px;
+  gap: var(--space-sm);
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -443,7 +458,7 @@ body {
 /* Result */
 .result {
   text-align: center;
-  padding: 1.25rem 0;
+  padding: var(--space-lg) 0;
   width: 100%;
 }
 
@@ -451,11 +466,11 @@ body {
   font-size: 1rem;
   font-weight: 800;
   color: #ffd700;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-md);
 }
 
 .result__button {
-  padding: 0.6rem 1.5rem;
+  padding: var(--space-sm) var(--space-xl);
   font-size: 0.95rem;
   font-weight: 800;
   font-family: inherit;

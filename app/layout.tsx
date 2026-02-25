@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 const fallbackStyles = `
-  html, body { min-height: 100%; margin: 0; background: linear-gradient(180deg, #1a0a2e 0%, #3d1f5c 50%, #5c2d7a 100%); }
+  html, body { min-height: 100%; margin: 0; background: #1a1a1a; }
 `;
 
 export default function RootLayout({
