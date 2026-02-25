@@ -38,9 +38,7 @@ npm run format
 
 1. Push this repo to GitHub (or connect your Git provider).
 2. In [Vercel](https://vercel.com), import the project.
-3. Build settings are preconfigured via `vercel.json`:
-   - **Build Command:** `next build`
-   - **Output Directory:** `out`
+3. Vercel will detect Next.js and use `next build`. With `output: 'export'` in `next.config.js`, the static `out/` folder is deployed automatically (do not set a custom Output Directory).
 4. Deploy. No environment variables required.
 
 You can also deploy from the CLI:
