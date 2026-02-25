@@ -12,7 +12,6 @@ import {
 } from "@/lib/gameLogic";
 import { Board } from "@/components/Board";
 import { Palette } from "@/components/Palette";
-import { CurrentGuess } from "@/components/CurrentGuess";
 
 type GameStatus = "playing" | "won" | "lost";
 
@@ -93,56 +92,29 @@ export default function Home() {
           <h1 className="title">
             BIO<span className="title-mind">MIND</span>
           </h1>
-          <p className="subtitle">Guess the 4-color code in 6 tries</p>
+          <p className="subtitle">Can you crack the code?</p>
         </header>
 
-        <p className="rules">
-          <span className="rules__peg rules__peg--exact" /> = right color, right
-          spot &nbsp;·&nbsp;{" "}
-          <span className="rules__peg rules__peg--wrong" /> = right color,
-          wrong spot
-        </p>
-
         <section className="game">
-          <div className="current-row">
-            <p className="current-row__label">Your guess</p>
-            <CurrentGuess
-              guess={currentGuess}
-              onSlotClick={removeFromGuess}
-              onSubmit={submitGuess}
-              disabled={gameOver}
-              canSubmit={!!canSubmit}
-              showSubmit={true}
-            />
-            <Palette onSelect={addToGuess} disabled={gameOver} />
-          </div>
-
           <Board
             secretCode={secretCode}
             history={history}
+            currentGuess={currentGuess}
+            onSlotClick={removeFromGuess}
             revealCode={gameOver}
-            codeLabel={status === "lost" ? "The code was:" : undefined}
           />
-        </section>
-
-        {gameOver && (
-          <div className="result" role="alert">
-            <p className="result__message">
-              {status === "won" ? (
-                <>You cracked it!</>
-              ) : (
-                <>Out of tries. The code is shown above.</>
-              )}
-            </p>
+          <div className="game-actions">
+            <Palette onSelect={addToGuess} disabled={gameOver} />
             <button
               type="button"
-              className="result__button"
-              onClick={newGame}
+              className={gameOver ? "result__button" : "current-guess__submit"}
+              onClick={gameOver ? newGame : submitGuess}
+              disabled={!gameOver && !canSubmit}
             >
-              New game
+              {gameOver ? "New game" : "Let's go"}
             </button>
           </div>
-        )}
+        </section>
       </div>
     </main>
   );
